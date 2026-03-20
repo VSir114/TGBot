@@ -1,12 +1,15 @@
 package org.example.tool;
 
+import org.example.Config.BotConfig;
 import org.example.Message.MessageSend;
+import org.example.command.CommandMethod;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.IOException;
 public class Bot extends TelegramLongPollingBot {
     @Override
     public String getBotUsername() {
@@ -17,7 +20,7 @@ public class Bot extends TelegramLongPollingBot {
     @Override
     public String getBotToken() {
 
-        return "";
+        return BotConfig.BotToken;
     }
 
     @Override
@@ -25,15 +28,16 @@ public class Bot extends TelegramLongPollingBot {
         /**
          * 重要方法。每当有新的更新可用时，它都会自动调用。
          * */
-        Message message = update.getMessage();
-        User from = message.getFrom();
-        String text = message.getText();
 
+        //MessageSend.SentTextByOne("you send message : "+ text , String.valueOf(from.getId()));
         try {
-            MessageSend.SentTextByOne("you send message : "+ text , String.valueOf(from.getId()));
+            CommandMethod.CommandCheck(update);
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+
         System.out.println(update);
     }
 }
