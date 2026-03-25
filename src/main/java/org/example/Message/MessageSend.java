@@ -1,13 +1,15 @@
 package org.example.Message;
 
 import org.example.Main;
-import org.example.tool.Bot;
+import org.example.Pojo.MessageImageText;
 import org.example.tool.HttpSend;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMediaGroup;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
+import org.telegram.telegrambots.meta.api.objects.media.InputMedia;
+import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.*;
@@ -53,28 +55,33 @@ public class MessageSend {
     public static void sendQuotedUpdateMessage(
             String from,
             List<Map<String,Object>> messageList
-    ) throws TelegramApiException, IOException {
-        String message = buildQuotedUpdateMessage(messageList);
+    ) throws TelegramApiException {
+        SendMessage.SendMessageBuilder sendMessage = SendMessage.builder();
         try {
+            String message = buildQuotedUpdateMessageOnlyText(messageList);
 
+            SendMediaGroup mediaGroup = SendMediaGroup.builder().build();
+
+
+            SendMessage build = sendMessage.chatId(from)
+                    .text(message)
+                    .parseMode(ParseMode.HTML)
+                    .disableWebPagePreview(true)
+                    .build();
+            Main.bot.execute(build);
         }catch (Exception e){
-
+            SendMessage build = sendMessage.chatId(from)
+                    .text(e.getMessage())
+                    .build();
+            Main.bot.execute(build);
         }
-        SendMessage sendMessage = SendMessage.builder()
-                .chatId(from)
-                .text(message)
-                .parseMode(ParseMode.HTML)
-                .disableWebPagePreview(true)
-                .build();
 
-        Main.bot.execute(sendMessage);
     }
     /**
-     * 自定义消息链构造器
-     * @param messageList 自定义消息链，键支持Text文本，Link链接、File文件、Quote二级标题
+     * 消息链构造器--文本
+     * @param messageList 自定义消息链，键支持Text文本，Link链接、Quote二级标题
      * */
-    //TODO 添加File支持
-    public static String buildQuotedUpdateMessage(List<Map<String, Object>> messageList) throws RuntimeException, IOException {
+    public static String buildQuotedUpdateMessageOnlyText(List<Map<String, Object>> messageList) throws RuntimeException, IOException {
         StringBuilder builder = new StringBuilder();
         for(Map<String,Object> messageMaps : messageList){
             for(String type : messageMaps.keySet()){
@@ -99,12 +106,6 @@ public class MessageSend {
                     builder.append(messageMaps.get(type));
                     builder.append("</blockquote>\n");
                 }
-                else if(type.equals("Image")){
-                    byte[] bytes = HttpSend.HttpGetImage("https://api.yujn.cn/api/gzl_ACG.php?type=image&form=pc", new HashMap<>());
-                    InputFile inputFile = FileInit(bytes);
-                    builder.append("<b>Image:</b> ")
-                            .append(inputFile);
-                }
                 else {
                     throw new RuntimeException("UnknowType:"+type+"Need Type Text Link Quote");
                 }
@@ -113,6 +114,51 @@ public class MessageSend {
         return builder.toString();
     }
 
+    /**
+     * 图文混发
+     * */
+    public static void buildQuotedUpdateMessageTextImage(String fromId , List<MessageImageText> list) throws RuntimeException, IOException, TelegramApiException {
+        SendMediaGroup mediaGroup = new SendMediaGroup();
+        mediaGroup.setChatId(fromId);
+        List<InputMedia> inputMediaList = new ArrayList<>();
+
+        for(MessageImageText messageImageText : list){
+            byte[] bytes = HttpSend.HttpGetImage(messageImageText.getImgUrl(), new HashMap<>());
+            InputMediaPhoto inputMediaPhoto = new InputMediaPhoto();
+            //及时关流
+            try(InputStream byteArrayInputStream = new ByteArrayInputStream(bytes);){
+                inputMediaPhoto.setMedia(byteArrayInputStream,String.valueOf(System.currentTimeMillis()));
+            }catch (IOException ioException){
+
+            }
+            inputMediaPhoto.setParseMode(ParseMode.HTML);
+            inputMediaList.add(inputMediaPhoto);
+        }
+        //只有第一个Caption会生效，多了文字发不出去
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("<b>");
+        builder.append("随机美图");
+        builder.append("</b>");
+        builder.append("\n");
+
+        builder.append("<a href=\"");
+        builder.append("https://api.yujn.cn/api/gzl_ACG.php?type=image&form=pc");
+        builder.append("\">");
+        builder.append("\n");
+        builder.append("API地址");
+        builder.append("</a>");
+        builder.append("\n");
+
+        inputMediaList.get(0).setCaption(builder.toString());
+        mediaGroup.setMedias(inputMediaList);
+
+        try {
+            Main.bot.execute(mediaGroup);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
     private static String escapeHtml(String text) {
         if (text == null) {
             return "";

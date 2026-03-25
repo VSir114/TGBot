@@ -1,4 +1,4 @@
-package org.example.Message;
+package org.example.Pojo;
 
 import lombok.Data;
 
@@ -10,4 +10,7 @@ public class MessageImageText {
 
     private String caption;
     private String imgUrl;
+    public MessageImageText(String caption , String imgUrl){
+        this.caption = caption; this.imgUrl = imgUrl;
+    }
 }
