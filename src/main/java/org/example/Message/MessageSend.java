@@ -157,6 +157,7 @@ public class MessageSend {
             Main.bot.execute(mediaGroup);
         }catch (Exception e){
             e.printStackTrace();
+            throw e;
         }
     }
     private static String escapeHtml(String text) {
