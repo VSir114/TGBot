@@ -10,6 +10,8 @@ import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
 public class Bot extends TelegramLongPollingBot {
     @Override
     public String getBotUsername() {
@@ -35,6 +37,9 @@ public class Bot extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        } catch (TimeoutException e) {
             throw new RuntimeException(e);
         }
 
